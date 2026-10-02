@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>System Call Simulator | KernelLab</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        /* NAVBAR */
+
+        .navbar {
+            height: 70px;
+            background: #111827;
+            color: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 0 50px;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .logo span {
+            color: #60a5fa;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 25px;
+        }
+
+        .nav-links a {
+            color: #d1d5db;
+            text-decoration: none;
+            font-size: 15px;
+        }
+
+        .nav-links a:hover {
+            color: white;
+        }
+
+        .nav-links .active {
+            color: #60a5fa;
+            font-weight: bold;
+        }
+
+        /* HEADER */
+
+        .page-header {
+            background: linear-gradient(135deg, #111827, #1e3a8a);
+            color: white;
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .page-header h1 {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .page-header p {
+            color: #dbeafe;
+            font-size: 17px;
+        }
+
+        /* CONTAINER */
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 25px;
+        }
+
+        /* CONTROL PANEL */
+
+        .control-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+
+            box-shadow:
+                0 5px 20px rgba(0,0,0,0.08);
+
+            margin-bottom: 30px;
+        }
+
+        .control-panel h2 {
+            margin-bottom: 25px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group h3 {
+            margin-bottom: 12px;
+        }
+
+        .architecture-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .architecture-btn {
+            padding: 12px 25px;
+            background: white;
+            border: 2px solid #d1d5db;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .architecture-btn.selected {
+            background: #111827;
+            color: white;
+            border-color: #111827;
+        }
+
+        .operation-select {
+            width: 100%;
+            padding: 13px;
+
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
+
+            font-size: 15px;
+        }
+
+        .simulate-btn {
+            padding: 14px 30px;
+
+            border: none;
+            border-radius: 7px;
+
+            background: #3b82f6;
+            color: white;
+
+            font-size: 16px;
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        .simulate-btn:hover {
+            background: #2563eb;
+        }
+
+        /* RESULT */
+
+        .result {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+
+            box-shadow:
+                0 5px 20px rgba(0,0,0,0.08);
+
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .result-description {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+
+        /* FLOW */
+
+        .flow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flow-step {
+            width: 320px;
+
+            padding: 16px;
+
+            border-radius: 8px;
+
+            background: #eff6ff;
+
+            border: 2px solid #3b82f6;
+
+            text-align: center;
+
+            font-weight: bold;
+
+            opacity: 0;
+            transform: translateY(15px);
+
+            transition: 0.4s;
+        }
+
+        .flow-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .flow-arrow {
+            font-size: 25px;
+            color: #6b7280;
+
+            opacity: 0;
+        }
+
+        .flow-arrow.visible {
+            opacity: 1;
+        }
+
+        /* STATUS */
+
+        .status {
+            margin-top: 30px;
+            padding: 18px;
+
+            text-align: center;
+
+            background: #f0fdf4;
+
+            border: 2px solid #86efac;
+
+            border-radius: 8px;
+
+            color: #166534;
+
+            font-weight: bold;
+
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        /* FOOTER */
+
+        footer {
+            margin-top: 60px;
+
+            background: #111827;
+
+            color: #d1d5db;
+
+            text-align: center;
+
+            padding: 30px;
+        }
+
+        footer strong {
+            color: white;
+        }
+
+        /* MOBILE */
+
+        @media(max-width: 700px) {
+
+            .navbar {
+                padding: 0 20px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .page-header h1 {
+                font-size: 28px;
+            }
+
+            .flow-step {
+                width: 100%;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- NAVBAR -->
+
+<nav class="navbar">
+    <div class="logo">Kernel Architecture Lab</div>
+
+    <div class="nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="SystemCall.html">System Calls</a>
+        <a href="Fault.html">Fault Isolation</a>
+        <a href="Comparision.html">Comparison</a>
+    </div>
+</nav>
+
+
+<!-- HEADER -->
+
+<section class="page-header">
+
+    <h1>
+        System Call / IPC Simulator
+    </h1>
+
+    <p>
+        Simulate how applications communicate
+        with kernel services.
+    </p>
+
+</section>
+
+
+<!-- MAIN -->
+
+<main class="container">
+
+
+    <!-- CONTROL PANEL -->
+
+    <section class="control-panel">
+
+        <h2>
+            Configure Simulation
+        </h2>
+
+
+        <div class="control-group">
+
+            <h3>
+                1. Select Architecture
+            </h3>
+
+            <div class="architecture-buttons">
+
+                <button
+                    class="architecture-btn selected"
+                    id="monoBtn"
+                    onclick="selectArchitecture('monolithic')">
+
+                    Monolithic Kernel
+
+                </button>
+
+
+                <button
+                    class="architecture-btn"
+                    id="microBtn"
+                    onclick="selectArchitecture('microkernel')">
+
+                    Microkernel
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <h3>
+                2. Select Operation
+            </h3>
+
+            <select
+                id="operation"
+                class="operation-select">
+
+                <option value="read">
+                    Read File
+                </option>
+
+                <option value="write">
+                    Write File
+                </option>
+
+                <option value="process">
+                    Create Process
+                </option>
+
+                <option value="memory">
+                    Allocate Memory
+                </option>
+
+                <option value="network">
+                    Network Request
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <button
+            class="simulate-btn"
+            onclick="startSimulation()">
+
+            ▶ Start Simulation
+
+        </button>
+
+    </section>
+
+
+    <!-- RESULT -->
+
+    <section
+        class="result"
+        id="result">
+
+        <h2 id="resultTitle">
+            Simulation
+        </h2>
+
+        <p
+            class="result-description"
+            id="resultDescription">
+
+        </p>
+
+
+        <div
+            class="flow"
+            id="flow">
+
+        </div>
+
+
+        <div
+            class="status"
+            id="status">
+
+            Operation Completed Successfully
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- FOOTER -->
+
+<footer>
+
+    <p>
+        <strong>Kernel Architecture Lab</strong>
+    </p>
+
+    <p>
+        System Call / IPC Simulation
+    </p>
+
+</footer>
+
+
+<script>
+
+    let selectedArchitecture = "monolithic";
+
+
+    /* SELECT ARCHITECTURE */
+
+    function selectArchitecture(type) {
+
+        selectedArchitecture = type;
+
+        const monoBtn =
+            document.getElementById("monoBtn");
+
+        const microBtn =
+            document.getElementById("microBtn");
+
+
+        if(type === "monolithic") {
+
+            monoBtn.classList.add("selected");
+
+            microBtn.classList.remove("selected");
+
+        }
+
+        else {
+
+            microBtn.classList.add("selected");
+
+            monoBtn.classList.remove("selected");
+
+        }
+
+    }
+
+
+    /* START SIMULATION */
+
+    function startSimulation() {
+
+        const operation =
+            document.getElementById("operation").value;
+
+        const result =
+            document.getElementById("result");
+
+        const flow =
+            document.getElementById("flow");
+
+        const status =
+            document.getElementById("status");
+
+
+        result.classList.add("show");
+
+        status.classList.remove("show");
+
+        flow.innerHTML = "";
+
+
+        let steps = [];
+
+
+        /* MONOLITHIC */
+
+        if(selectedArchitecture === "monolithic") {
+
+            if(operation === "read") {
+
+                steps = [
+                    "Application",
+                    "read() System Call",
+                    "Linux Kernel",
+                    "File System",
+                    "Device Driver",
+                    "Storage"
+                ];
+
+            }
+
+            else if(operation === "write") {
+
+                steps = [
+                    "Application",
+                    "write() System Call",
+                    "Linux Kernel",
+                    "File System",
+                    "Device Driver",
+                    "Storage"
+                ];
+
+            }
+
+            else if(operation === "process") {
+
+                steps = [
+                    "Application",
+                    "Process Creation System Call",
+                    "Linux Kernel",
+                    "Process Management",
+                    "CPU Scheduler",
+                    "New Process"
+                ];
+
+            }
+
+            else if(operation === "memory") {
+
+                steps = [
+                    "Application",
+                    "Memory Allocation Request",
+                    "Linux Kernel",
+                    "Memory Management",
+                    "Physical Memory"
+                ];
+
+            }
+
+            else {
+
+                steps = [
+                    "Application",
+                    "Network System Call",
+                    "Linux Kernel",
+                    "Networking Stack",
+                    "Network Driver",
+                    "Network Hardware"
+                ];
+
+            }
+
+        }
+
+
+        /* MICROKERNEL */
+
+        else {
+
+            if(operation === "read") {
+
+                steps = [
+                    "Application",
+                    "IPC Request",
+                    "Microkernel",
+                    "File System Server",
+                    "Device Driver Server",
+                    "Storage"
+                ];
+
+            }
+
+            else if(operation === "write") {
+
+                steps = [
+                    "Application",
+                    "IPC Request",
+                    "Microkernel",
+                    "File System Server",
+                    "Device Driver Server",
+                    "Storage"
+                ];
+
+            }
+
+            else if(operation === "process") {
+
+                steps = [
+                    "Application",
+                    "IPC Request",
+                    "Microkernel",
+                    "Process Server",
+                    "CPU Scheduler",
+                    "New Process"
+                ];
+
+            }
+
+            else if(operation === "memory") {
+
+                steps = [
+                    "Application",
+                    "IPC Request",
+                    "Microkernel",
+                    "Memory Server",
+                    "Physical Memory"
+                ];
+
+            }
+
+            else {
+
+                steps = [
+                    "Application",
+                    "IPC Request",
+                    "Microkernel",
+                    "Network Server",
+                    "Network Driver Server",
+                    "Network Hardware"
+                ];
+
+            }
+
+        }
+
+
+        document.getElementById("resultTitle").textContent =
+            selectedArchitecture === "monolithic"
+            ? "Monolithic Kernel Simulation"
+            : "Microkernel Simulation";
+
+
+        document.getElementById("resultDescription").textContent =
+            "Executing " +
+            document.getElementById("operation")
+                .selectedOptions[0].text +
+            " request";
+
+
+        /* CREATE FLOW */
+
+        steps.forEach((step, index) => {
+
+            const box =
+                document.createElement("div");
+
+            box.className = "flow-step";
+
+            box.textContent = step;
+
+            flow.appendChild(box);
+
+
+            if(index < steps.length - 1) {
+
+                const arrow =
+                    document.createElement("div");
+
+                arrow.className =
+                    "flow-arrow";
+
+                arrow.textContent = "↓";
+
+                flow.appendChild(arrow);
+
+            }
+
+        });
+
+
+        /* ANIMATION */
+
+        const elements =
+            flow.children;
+
+
+        let index = 0;
+
+
+        function animate() {
+
+            if(index < elements.length) {
+
+                elements[index]
+                    .classList.add("visible");
+
+                index++;
+
+                setTimeout(
+                    animate,
+                    500
+                );
+
+            }
+
+            else {
+
+                setTimeout(
+                    () => {
+                        status.classList.add("show");
+                    },
+                    400
+                );
+
+            }
+
+        }
+
+
+        animate();
+
+    }
+
+</script>
+
+
+</body>
+
+</html>

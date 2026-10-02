@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Fault Isolation | KernelLab</title>
+
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+
+        body {
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+
+        /* NAVBAR */
+
+        .navbar {
+
+            height: 70px;
+
+            background: #111827;
+
+            color: white;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 0 50px;
+
+        }
+
+
+        .logo {
+
+            font-size: 22px;
+
+            font-weight: bold;
+
+        }
+
+
+        .logo span {
+
+            color: #60a5fa;
+
+        }
+
+
+        .nav-links {
+
+            display: flex;
+
+            gap: 25px;
+
+        }
+
+
+        .nav-links a {
+
+            color: #d1d5db;
+
+            text-decoration: none;
+
+            font-size: 15px;
+
+        }
+
+
+        .nav-links a:hover {
+
+            color: white;
+
+        }
+
+
+        .nav-links .active {
+
+            color: #60a5fa;
+
+            font-weight: bold;
+
+        }
+
+
+        /* HEADER */
+
+        .page-header {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #111827,
+                    #1e3a8a
+                );
+
+            color: white;
+
+            text-align: center;
+
+            padding: 50px 20px;
+
+        }
+
+
+        .page-header h1 {
+
+            font-size: 36px;
+
+            margin-bottom: 12px;
+
+        }
+
+
+        .page-header p {
+
+            color: #dbeafe;
+
+            font-size: 17px;
+
+        }
+
+
+        /* CONTAINER */
+
+        .container {
+
+            max-width: 1100px;
+
+            margin: 40px auto;
+
+            padding: 0 25px;
+
+        }
+
+
+        /* CONTROL */
+
+        .control-panel {
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 5px 20px rgba(0,0,0,0.08);
+
+            margin-bottom: 30px;
+
+        }
+
+
+        .control-panel h2 {
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .buttons {
+
+            display: flex;
+
+            gap: 15px;
+
+            flex-wrap: wrap;
+
+        }
+
+
+        .select-btn {
+
+            padding: 13px 25px;
+
+            background: white;
+
+            border: 2px solid #d1d5db;
+
+            border-radius: 7px;
+
+            cursor: pointer;
+
+            font-weight: bold;
+
+        }
+
+
+        .select-btn.selected {
+
+            background: #111827;
+
+            color: white;
+
+            border-color: #111827;
+
+        }
+
+
+        select {
+
+            width: 100%;
+
+            padding: 13px;
+
+            margin-top: 20px;
+
+            border: 1px solid #d1d5db;
+
+            border-radius: 7px;
+
+            font-size: 15px;
+
+        }
+
+
+        .crash-btn {
+
+            margin-top: 20px;
+
+            padding: 14px 30px;
+
+            background: #dc2626;
+
+            color: white;
+
+            border: none;
+
+            border-radius: 7px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+        }
+
+
+        .crash-btn:hover {
+
+            background: #b91c1c;
+
+        }
+
+
+        /* SYSTEM */
+
+        .system {
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 5px 20px rgba(0,0,0,0.08);
+
+        }
+
+
+        .system h2 {
+
+            text-align: center;
+
+            margin-bottom: 25px;
+
+        }
+
+
+        .architecture {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(auto-fit, minmax(150px, 1fr));
+
+            gap: 15px;
+
+        }
+
+
+        .component {
+
+            padding: 25px 15px;
+
+            background: #111827;
+
+            color: white;
+
+            text-align: center;
+
+            border-radius: 8px;
+
+            font-weight: bold;
+
+            transition: 0.4s;
+
+        }
+
+
+        .component.failed {
+
+            background: #fee2e2;
+
+            color: #991b1b;
+
+            border: 3px solid #dc2626;
+
+        }
+
+
+        .component.affected {
+
+            background: #fef3c7;
+
+            color: #92400e;
+
+            border: 3px solid #f59e0b;
+
+        }
+
+
+        .component.recovered {
+
+            background: #dcfce7;
+
+            color: #166534;
+
+            border: 3px solid #22c55e;
+
+        }
+
+
+        /* RESULT */
+
+        .result {
+
+            margin-top: 25px;
+
+            padding: 25px;
+
+            border-radius: 10px;
+
+            display: none;
+
+        }
+
+
+        .result.show {
+
+            display: block;
+
+        }
+
+
+        .result.danger {
+
+            background: #fef2f2;
+
+            border: 2px solid #fecaca;
+
+            color: #991b1b;
+
+        }
+
+
+        .result.warning {
+
+            background: #fffbeb;
+
+            border: 2px solid #fde68a;
+
+            color: #92400e;
+
+        }
+
+
+        .result.success {
+
+            background: #f0fdf4;
+
+            border: 2px solid #86efac;
+
+            color: #166534;
+
+        }
+
+
+        .result h3 {
+
+            margin-bottom: 10px;
+
+        }
+
+
+        .restart-btn {
+
+            margin-top: 15px;
+
+            padding: 10px 20px;
+
+            border: none;
+
+            border-radius: 6px;
+
+            background: #166534;
+
+            color: white;
+
+            cursor: pointer;
+
+            font-weight: bold;
+
+        }
+
+
+        /* FOOTER */
+
+        footer {
+
+            margin-top: 60px;
+
+            background: #111827;
+
+            color: #d1d5db;
+
+            text-align: center;
+
+            padding: 30px;
+
+        }
+
+
+        footer strong {
+
+            color: white;
+
+        }
+
+
+        @media(max-width: 700px) {
+
+            .navbar {
+
+                padding: 0 20px;
+
+            }
+
+            .nav-links {
+
+                display: none;
+
+            }
+
+            .page-header h1 {
+
+                font-size: 28px;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- NAVBAR -->
+
+<nav class="navbar">
+    <div class="logo">Kernel Architecture Lab</div>
+
+    <div class="nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="SystemCall.html">System Calls</a>
+        <a href="Fault.html">Fault Isolation</a>
+        <a href="Comparision.html">Comparison</a>
+    </div>
+</nav>
+
+
+<!-- HEADER -->
+
+<section class="page-header">
+
+    <h1>
+        Fault Isolation Simulator
+    </h1>
+
+    <p>
+        Simulate component failures and observe
+        how different kernel architectures respond.
+    </p>
+
+</section>
+
+
+<main class="container">
+
+
+<!-- CONTROL PANEL -->
+
+<section class="control-panel">
+
+    <h2>
+        Configure Fault Simulation
+    </h2>
+
+
+    <h3>
+        Select Architecture
+    </h3>
+
+
+    <div class="buttons">
+
+        <button
+            class="select-btn selected"
+            id="monoBtn"
+            onclick="selectArchitecture('monolithic')">
+
+            Monolithic Kernel
+
+        </button>
+
+
+        <button
+            class="select-btn"
+            id="microBtn"
+            onclick="selectArchitecture('microkernel')">
+
+            Microkernel
+
+        </button>
+
+    </div>
+
+
+    <select id="component">
+
+        <option value="file">
+            File System
+        </option>
+
+        <option value="network">
+            Network Service
+        </option>
+
+        <option value="driver">
+            Device Driver
+        </option>
+
+        <option value="process">
+            Process Management
+        </option>
+
+    </select>
+
+
+    <button
+        class="crash-btn"
+        onclick="simulateFault()">
+
+        Crash Selected Component
+
+    </button>
+
+</section>
+
+
+<!-- SYSTEM -->
+
+<section class="system">
+
+    <h2 id="systemTitle">
+        Monolithic Kernel
+    </h2>
+
+
+    <div class="architecture"
+         id="architecture">
+
+        <div class="component"
+             data-name="file">
+
+            File System
+
+        </div>
+
+
+        <div class="component"
+             data-name="network">
+
+            Networking
+
+        </div>
+
+
+        <div class="component"
+             data-name="driver">
+
+            Device Drivers
+
+        </div>
+
+
+        <div class="component"
+             data-name="process">
+
+            Process Management
+
+        </div>
+
+
+        <div class="component">
+
+            Memory Management
+
+        </div>
+
+
+        <div class="component">
+
+            CPU Scheduler
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="result"
+        id="result">
+
+        <h3 id="resultTitle"></h3>
+
+        <p id="resultText"></p>
+
+
+        <button
+            class="restart-btn"
+            onclick="restartService()">
+
+            Restart Component
+
+        </button>
+
+    </div>
+
+</section>
+
+</main>
+
+
+<!-- FOOTER -->
+
+<footer>
+
+    <p>
+        <strong>Kernel Architecture Lab</strong>
+    </p>
+
+    <p>
+        Fault Isolation Simulation
+    </p>
+
+</footer>
+
+
+<script>
+
+    let selectedArchitecture =
+        "monolithic";
+
+
+    /* SELECT ARCHITECTURE */
+
+    function selectArchitecture(type) {
+
+        selectedArchitecture = type;
+
+
+        document
+            .getElementById("monoBtn")
+            .classList.toggle(
+                "selected",
+                type === "monolithic"
+            );
+
+
+        document
+            .getElementById("microBtn")
+            .classList.toggle(
+                "selected",
+                type === "microkernel"
+            );
+
+
+        document
+            .getElementById("systemTitle")
+            .textContent =
+            type === "monolithic"
+            ? "Monolithic Kernel"
+            : "Microkernel";
+
+
+        resetComponents();
+
+    }
+
+
+    /* SIMULATE FAULT */
+
+    function simulateFault() {
+
+        const selected =
+            document.getElementById(
+                "component"
+            ).value;
+
+
+        const components =
+            document.querySelectorAll(
+                ".component"
+            );
+
+
+        resetComponents();
+
+
+        components.forEach(component => {
+
+            if(component.dataset.name === selected) {
+
+                component.classList.add(
+                    "failed"
+                );
+
+            }
+
+        });
+
+
+        const result =
+            document.getElementById(
+                "result"
+            );
+
+
+        const title =
+            document.getElementById(
+                "resultTitle"
+            );
+
+
+        const text =
+            document.getElementById(
+                "resultText"
+            );
+
+
+        result.className = "result show";
+
+
+        if(selectedArchitecture ===
+           "monolithic") {
+
+
+            result.classList.add("danger");
+
+
+            title.textContent =
+                "Kernel Component Failure";
+
+
+            text.textContent =
+                "The selected component operates inside the privileged kernel environment. A fault in a kernel component can potentially affect other kernel functionality. This simulation marks the component as failed to demonstrate the reduced isolation of many monolithic designs.";
+
+        }
+
+        else {
+
+
+            result.classList.add("warning");
+
+
+            title.textContent =
+                "User-Space Service Failure";
+
+
+            text.textContent =
+                "The selected service is modeled as a separate user-space service. The microkernel itself remains running, demonstrating stronger isolation between the service and the kernel core.";
+
+        }
+
+    }
+
+
+    /* RESET */
+
+    function resetComponents() {
+
+        document
+            .querySelectorAll(".component")
+            .forEach(component => {
+
+                component.classList.remove(
+                    "failed",
+                    "affected",
+                    "recovered"
+                );
+
+            });
+
+
+        document
+            .getElementById("result")
+            .className = "result";
+
+    }
+
+
+    /* RESTART */
+
+    function restartService() {
+
+        const selected =
+            document.getElementById(
+                "component"
+            ).value;
+
+
+        const components =
+            document.querySelectorAll(
+                ".component"
+            );
+
+
+        components.forEach(component => {
+
+            if(component.dataset.name === selected) {
+
+                component.classList.remove(
+                    "failed"
+                );
+
+                component.classList.add(
+                    "recovered"
+                );
+
+            }
+
+        });
+
+
+        const result =
+            document.getElementById(
+                "result"
+            );
+
+
+        result.className =
+            "result show success";
+
+
+        document.getElementById(
+            "resultTitle"
+        ).textContent =
+            "Component Recovered";
+
+
+        document.getElementById(
+            "resultText"
+        ).textContent =
+            "The selected component has been restarted in the simulation.";
+
+    }
+
+</script>
+
+
+</body>
+
+</html>
